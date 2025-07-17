@@ -1,0 +1,61 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+
+num_intervals = 36
+group_durations = {'G1': 15, 'G2': 25, 'G3': 35}
+group_labels = ['G1', 'G2', 'G3']
+group_probs = [0.4, 0.4, 0.2]  
+
+
+cases = {
+    1: [20]*10,
+    2: [30]*10,
+    3: [40]*10,
+    4: [50]*10,
+    5: [20]*4 + [30]*2 + [40]*2 + [50]*2,
+    6: [20]*2 + [30]*4 + [40]*2 + [50]*2,
+    7: [20]*2 + [30]*2 + [40]*4 + [50]*2,
+    8: [20]*2 + [30]*2 + [40]*2 + [50]*4,
+    9: [20]*3 + [30]*3 + [40]*2 + [50]*2,
+    10: [20]*2 + [30]*3 + [40]*3 + [50]*2,
+    11: [20]*2 + [30]*2 + [40]*3 + [50]*3
+}
+
+
+results = pd.DataFrame(columns=[f"Case {i}" for i in range(1, 12)])
+
+for case_num, power_ratings in cases.items():
+    columns = [{'remaining_time': 0, 'power': p} for p in power_ratings]
+    total_power_per_interval = []
+
+    for t in range(num_intervals):
+        total_power = 0
+        for col in columns:
+            if col['remaining_time'] <= 0:
+                group = np.random.choice(group_labels, p=group_probs)
+                col['remaining_time'] = group_durations[group]
+            else:
+                col['remaining_time'] -= 5
+
+            if col['remaining_time'] > 0:
+                total_power += col['power']
+
+        total_power_per_interval.append(total_power)
+
+    results[f"Case {case_num}"] = total_power_per_interval
+
+
+summary_stats = pd.DataFrame(index=results.columns)
+summary_stats["Средна мощност (kW)"] = results.mean()
+summary_stats["Макс. мощност (kW)"] = results.max()
+summary_stats["Мин. мощност (kW)"] = results.min()
+
+summary_stats["Коефициент на натоварване"] = summary_stats["Средна мощност (kW)"] / 500
+
+available_power = {i: sum(cases[i]) for i in range(1, 12)}
+summary_stats["Ефективност спрямо колонки"] = [
+    summary_stats.loc[f"Case {i}", "Средна мощност (kW)"] / available_power[i] for i in range(1, 12)
+]ДП
+print(summary_stats.round(2))
